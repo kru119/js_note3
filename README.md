@@ -231,7 +231,7 @@ alert(brother instanceof Parent);//true
 </script>
 ```
 借用构造函数虽然解决了刚才两种问题，但没有原型，则复用无从谈起，所以我们需要原型链+借用构造函数的模式，这种模式称为组合继承
-###组合继承
+### 组合继承
 ```
 <script>
     function Parent(age){
@@ -355,4 +355,59 @@ call([thisObj[,arg1[, arg2[, [,.argN]]]]])
     foo.apply(window);  // "apple",此时this等于window
     // 此时foo中的this === pack
     foo.apply(pack);    // "orange"
-    ```
+```
+### 组合继承和寄生组合继承的区别
+```
+function Sup(grade){
+    this.grade = grade
+}
+Sup.prototype.sayGrade = function (){
+    console.log(this.grade)
+}
+
+function Sub(name){
+    Sup.call(this,'一3班')
+    this.name = name
+}
+
+Sub.prototype = new Sup('一3班');
+Sub.prototype.constructor = Sub;
+
+var instance = new Sub('小强');
+
+console.dir(instance);
+console.dir(instance.sayGrade());
+```
+运行结果如下
+![](https://pic1.zhimg.com/80/v2-b162d458b2fad514fc762d3d96e14c6c_720w.jpg)
+可以看到实例上确实已经有了继承自Sup的grade属性和由Sub产生的name属性，在实例上执行sayGrade方法也能正确打印出结果。但可以看到由于Sup构造函数实例化了两次，在Sub的原型上也出现了grade属性。由于在实例上获取属性时会按原型链逐级往上找，而在实例上就已经获取到了grade属性，所以通常情况下原型上的这个属性不会生效，拥有这个“多余的”属性也无伤大雅。但在某些情况下会造成错误，例如删除实例上的grade属性，实际上还能访问到，此时获取到的是原型上的属性。
+
+问题就出在第一次的new Sup('一3班')上，只是为了继承原型上的实例和方法其实不必要执行该方法，寄生组合继承就可以解决这个问题。
+
+寄生组合继承
+```
+function Sup(grade){
+    this.grade = grade
+}
+Sup.prototype.sayGrade = function (){
+    console.log(this.grade)
+}
+
+function Sub(name){
+    Sup.call(this,'一3班')
+    this.name = name
+}
+
+Sub.prototype = Object.create(Sup.prototype);
+Sub.prototype.constructor = Sub;
+
+var instance = new Sub('小强');
+
+console.dir(instance);
+console.dir(instance.sayGrade);
+```
+运行结果如下
+![](https://pic3.zhimg.com/80/v2-5ed42693a29e020e7560b912577736be_720w.jpg)
+可以看到，Sub的原型上已经没有grade属性，这是因为Object.create(Sup.prototype)方法返回一个以Sup.prototype为原型的对象，而不用执行Sup方法。
+
+显然寄生组合继承要比组合继承更加合理。
