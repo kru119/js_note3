@@ -1,2 +1,2 @@
-# js_note3
-面向对象this构造函数
+# Javascript 面向对象编程（一）：封装
+
